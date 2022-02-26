@@ -30,4 +30,4 @@ jobs:
           branch: continuous-update/${{steps.date.outputs.date}}
           branch-suffix: timestamp
           delete-branch: true
-          reviewers: silver886
+          reviewers: silver886,${{GITHUB_REPOSITORY_OWNER}}
