@@ -401,6 +401,19 @@ RUN make -C /usr/src/linux/tools/hv hv_kvp_daemon; \
 	cp /usr/src/linux/tools/hv/hv_kvp_daemon usr/local/sbin/; \
 	tcl-chroot hv_kvp_daemon --help || [ "$?" = 1 ]
 
+# Install QEMU Guest Agent
+# (extracting binary only)
+ENV QEMUGA_DEPS qemu
+# changed in TC 9 into qemu-common
+RUN set -ex; \
+	for dep in $QEMUGA_DEPS; do \
+		echo "Download $TCL_REPO_BASE/tcz/$dep.tcz"; \
+		curl -fL -o "/tmp/$dep.tcz" "$TCL_REPO_BASE/tcz/$dep.tcz" \
+			|| curl -fL -o "/tmp/$dep.tcz" "$TCL_REPO_FALLBACK/tcz/$dep.tcz"; \
+		unsquashfs -f -d "$ROOTFS" "/tmp/$dep.tcz" /usr/local/bin/qemu-ga; \
+		rm -f "/tmp/$dep.tcz"; \
+	done
+
 # scan all built modules for kernel loading
 RUN tcl-chroot depmod "$(< /usr/src/linux/include/config/kernel.release)"
 

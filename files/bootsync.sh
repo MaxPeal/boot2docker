@@ -42,18 +42,32 @@ fi
 
 crond -L /var/lib/boot2docker/log/crond.log
 
-/etc/init.d/vbox start
+# Automount Shared Folders (VirtualBox, etc.); start VBox services
+[ -e /etc/init.d/vbox ] && /etc/init.d/vbox start
+
+# Launch vmware-tools
 if grep -qi vmware /sys/class/dmi/id/sys_vendor 2>/dev/null; then
 	# try to mount the root shared folder; this command can fail (if shared folders are disabled on the host, vmtoolsd will take care of the mount if they are enabled while the machine is running)
 	[ -d /mnt/hgfs ] || { mkdir -p /mnt/hgfs; vmhgfs-fuse -o allow_other .host:/ /mnt/hgfs; }
 	vmtoolsd --background /var/run/vmtoolsd.pid
 	# TODO evaluate /usr/local/etc/init.d/open-vm-tools further (does more than this short blurb, and doesn't invoke vmhgfs-fuse)
 fi
+
+# Run Hyper-V KVP Daemon
 if modprobe hv_utils > /dev/null 2>&1; then
 	hv_kvp_daemon
 fi
-/usr/local/etc/init.d/prltoolsd start
-/etc/init.d/xe-linux-distribution start
+
+# Load Parallels Tools daemon
+[ -e /usr/local/etc/init.d/prltoolsd ] && /usr/local/etc/init.d/prltoolsd start
+
+# Launch xenserver-tools
+[ -e /etc/rc.d/xedaemon ] && /etc/rc.d/xedaemon
+[ -e /etc/init.d/xe-linux-distribution ] && /etc/init.d/xe-linux-distribution start
+
+# Load QEMU Guest agent
+[ -e /etc/rc.d/qemu-guest-agent ] && /etc/rc.d/qemu-guest-agent
+[ -e /etc/rc.d/qemu-ga ] && /etc/rc.d/qemu-ga
 
 if [ -d /var/lib/boot2docker/ssh ]; then
 	rm -rf /usr/local/etc/ssh
@@ -67,9 +81,9 @@ for keyType in rsa dsa ecdsa ed25519; do # pre-generate a few SSH host keys to d
 	echo "Generating $keyFile"
 	ssh-keygen -q -t "$keyType" -N '' -f "$keyFile"
 done
-/usr/local/etc/init.d/openssh start
+[ -e /usr/local/etc/init.d/openssh ] && /usr/local/etc/init.d/openssh start
 
-/usr/local/etc/init.d/acpid start
+[ -e /usr/local/etc/init.d/acpid ] && /usr/local/etc/init.d/acpid start
 
 if [ -e /var/lib/boot2docker/bootsync.sh ]; then
 	sh /var/lib/boot2docker/bootsync.sh
